@@ -1,6 +1,8 @@
 #include "Header.h"
+#include <cstdlib>
+#include <ctime>
 
-Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), snake(418, 418, 32), board(800, 800) {}
+Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), snake(448, 448, 32), board(800, 800, 32), fruit(32) {}
 Game::~Game() {}
 
 Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), direction(UP)
@@ -8,6 +10,9 @@ Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), dir
 	body.push_front({ initialX, initialY });
 }
 Snake::~Snake() {}
+
+Board::Board(int width, int height, int cellSize) : width(width), height(height), border{}, cellSize(cellSize) {}
+Board::~Board() {}
 
 void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag)
 {
@@ -51,7 +56,8 @@ void Game::handleEvents()
 		{
 			isRunning = false;
 		}
-		else if (SDL_KEYDOWN)
+		
+		if (event.type == SDL_KEYDOWN)
 		{
 			switch (event.key.keysym.sym)
 			{
@@ -75,13 +81,26 @@ void Game::handleEvents()
 }
 void Game::update()
 {
-	snake.move();
-	
+	if (snake.checkCollision())
+	{
+		isRunning = false;
+	}
+	else
+	{
+		if (snake.checkFruitCollision(fruit))
+		{
+			snake.grow();
+			fruit.spawn();
+		}
+		snake.move();
+	}
 }
 void Game::render()
 {
 	board.drawBorder(renderer);
+	fruit.render(renderer);
 	snake.render(renderer);
+
 	SDL_RenderPresent(renderer);
 }
 void Game::clean()
@@ -91,15 +110,13 @@ void Game::clean()
 	SDL_Quit();
 }
 
-Board::Board(int width, int height) : width(width), height(height), border{} {}
-Board::~Board() {}
 
 void Board::drawBorder(SDL_Renderer* renderer)
 {
-	border.x = 100;
-	border.y = 100;
-	border.w = 700;
-	border.h = 700;
+	border.x = 96;
+	border.y = 96;
+	border.w = 704;
+	border.h = 704;
 
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(renderer);
@@ -110,7 +127,6 @@ void Board::drawBorder(SDL_Renderer* renderer)
 
 void Snake::render(SDL_Renderer* renderer)
 {
-
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
     for (const SDL_Point& bodyPart : body)
@@ -142,4 +158,62 @@ void Snake::move()
 	}
 	body.push_front(head);	
 	body.pop_back();
+}
+
+void Snake::setDirection(Direction newDirection)
+{
+	if (direction == UP && newDirection == DOWN || direction == DOWN && newDirection == UP ||
+		direction == LEFT && newDirection == RIGHT || direction == RIGHT && newDirection == LEFT) {}
+	else
+	{
+		direction = newDirection;
+	}
+}
+
+bool Snake::checkCollision()
+{
+	SDL_Point head = body.front();
+	
+	if (head.x < 96 || head.x > 770 || head.y < 96 || head.y > 770)	
+	{
+		std::cout << "Hallooo" << std::endl;
+		return true;
+	}
+	
+	return false;
+}
+
+bool Snake::checkFruitCollision(Fruit& fruit)
+{
+	SDL_Point head = body.front();
+
+	if (head.x == fruit.getX() && head.y == fruit.getY())
+	{
+		return true;
+	}
+	return false;
+}
+
+void Snake::grow()
+{
+	body.push_back(body.back());
+}
+Fruit::Fruit(int cellSize) : size(cellSize), cellSize(cellSize)
+{
+	spawn();
+}
+Fruit::~Fruit() {}
+
+void Fruit::spawn()
+{
+	x = rand() % (704 / cellSize) * cellSize + 96;
+	y = rand() % (704 / cellSize) * cellSize + 96;
+}
+
+void Fruit::render(SDL_Renderer* renderer)
+{
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+
+	SDL_Rect rect = { x, y, size, size };
+	SDL_RenderFillRect(renderer, &rect);
 }

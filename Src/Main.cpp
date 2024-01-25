@@ -2,8 +2,10 @@
 
 int main(int argc, char* args[])
 {
-	const int window_width = 900;
-	const int window_height = 900;
+	const int window_width = 896;
+	const int window_height = 896;
+
+	srand(static_cast<unsigned>(time(NULL)));
 
 	Game game;
 

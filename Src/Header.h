@@ -6,7 +6,7 @@
 class Board
 {
 public:
-	Board(int width, int height);
+	Board(int width, int height, int cellSize);
 	~Board();
 
 	void drawBorder(SDL_Renderer* renderer);
@@ -15,6 +15,27 @@ private:
 	SDL_Rect border;
 	int width;
 	int height;
+	int cellSize;
+};
+
+class Fruit
+{
+public:
+	Fruit(int cellSize);
+	~Fruit();
+
+	void spawn();
+	void render(SDL_Renderer* renderer);
+
+	SDL_Point getPosition() { return { x, y }; }
+	int getX() { return x; }
+	int getY() { return y; }
+
+private:
+	int x;
+	int y;
+	int size;
+	int cellSize;
 };
 class Snake
 {
@@ -32,14 +53,12 @@ public:
 
 	void move();
 	bool checkCollision();
+	bool checkFruitCollision(Fruit& fruit);
 	void grow();
 	void render(SDL_Renderer* renderer);
 
 	SDL_Point getHead() { return body.front(); }
-	void setDirection(Direction newDirection)
-	{
-		direction = newDirection;
-	}
+	void setDirection(Direction newDirection);
 
 private:
 	std::deque<SDL_Point> body;
@@ -75,5 +94,5 @@ private:
 	SDL_Renderer* renderer;
 	Snake snake;
 	Board board;
+	Fruit fruit;
 };
-
