@@ -1,6 +1,6 @@
 #include "Header.h"
 
-Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), snake(448, 448, 32), board(800, 800, 32), fruit(32) {}
+Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), snake(448, 448, 32), board(800, 800, 32, 10), fruit(32), score() {}
 Game::~Game() {}
 
 Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), direction(UP)
@@ -9,12 +9,12 @@ Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), dir
 }
 Snake::~Snake() {}
 
-Board::Board(int width, int height, int cellSize) : width(width), height(height), border{}, cellSize(cellSize) {}
+Board::Board(int width, int height, int cellSize, int score) : width(width), height(height), border{}, cellSize(cellSize), font(), score() {}
 Board::~Board() {}
 
 void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag)
 {
-	if (SDL_Init(SDL_INIT_EVERYTHING) == 0)
+	if (SDL_Init(SDL_INIT_EVERYTHING) == 0 && TTF_Init() == 0)
 	{
 		std::cout << "Initialised successfully" << std::endl;
 		window = SDL_CreateWindow(title, xpos, ypos, width, height, flag);
@@ -84,6 +84,7 @@ void Game::update()
 	{
 		if (snake.checkFruitCollision(fruit))
 		{
+			setScore(score);
 			snake.grow();
 			fruit.spawn();
 			while (snake.checkFruitLocation(fruit))
@@ -98,6 +99,7 @@ void Game::update()
 void Game::render()
 {
 	board.drawBorder(renderer);
+	board.displayText(renderer, getScore());
 	fruit.render(renderer);
 	snake.render(renderer);
 
@@ -110,6 +112,15 @@ void Game::clean()
 	SDL_Quit();
 }
 
+int Game::setScore(int& score)
+{
+	int addScore = 10;
+	if (snake.checkFruitCollision(fruit))
+	{
+		return score += addScore;
+	}
+	return score;
+}
 void Board::drawBorder(SDL_Renderer* renderer)
 {
 	border.x = 96;
@@ -122,6 +133,23 @@ void Board::drawBorder(SDL_Renderer* renderer)
 
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 	SDL_RenderDrawRect(renderer, &border);
+}
+
+void Board::displayText(SDL_Renderer* renderer, int score)
+{
+	font = TTF_OpenFont("Assets/PressStart2P-Regular.ttf", 18);
+	SDL_Color textColor = { 255, 255, 255 };
+
+	std::string scoreText = "Score: " + std::to_string(score);
+
+	SDL_Surface* textSurface = TTF_RenderText_Solid(font, scoreText.c_str(), textColor);
+	SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+	SDL_Rect textRect = { 96, 48, textSurface->w, textSurface->h };
+	SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+
+	SDL_FreeSurface(textSurface);
+	SDL_DestroyTexture(textTexture);
 }
 
 void Snake::render(SDL_Renderer* renderer)
@@ -176,7 +204,6 @@ bool Snake::checkCollision()
 	{
 		return true;
 	}
-	
 	return false;
 }
 
@@ -211,7 +238,7 @@ bool Snake::checkFruitLocation(Fruit& fruit)
 	{
 		if (fruit.getX() == i->x && fruit.getY() == i->y)
 		{
-			std::cout << "Fruit generated inside the snake body!" << std::endl;
+			std::cout << "Fruit generated inside the snake body!" << std::endl;     
 			return true;
 		}
 	}

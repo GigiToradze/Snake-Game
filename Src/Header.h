@@ -4,20 +4,29 @@
 #include <deque>
 #include <cstdlib>
 #include <ctime>
-
+#include <SDL_ttf.h>
+#include <string>
 class Board
 {
 public:
-	Board(int width, int height, int cellSize);
+	Board(int width, int height, int cellSize, int score);
 	~Board();
 
 	void drawBorder(SDL_Renderer* renderer);
-
+	void displayText(SDL_Renderer* renderer, int score);
+	void setScore(int newScore)
+	{
+		score = newScore;
+	}
+	
 private:
+	TTF_Font* font;
 	SDL_Rect border;
 	int width;
 	int height;
 	int cellSize;
+	int score;
+
 };
 
 class Fruit
@@ -45,29 +54,23 @@ public:
 	Snake(int initialX, int initialY, int cellSize);
 	~Snake();
 
-	enum Direction
-	{
-		UP,
-		RIGHT,
-		DOWN,
-		LEFT
-	};
+	enum Direction { UP, RIGHT, DOWN, LEFT };
 
 	void move();
+	void grow();
 	bool checkCollision();
 	bool checkFruitCollision(Fruit& fruit);
 	bool checkSelfCollision(Snake& snake);
 	bool checkFruitLocation(Fruit& fruit);
-	void grow();
 	void render(SDL_Renderer* renderer);
 
 	SDL_Point getHead() { return body.front(); }
 	void setDirection(Direction newDirection);
 
 private:
-	std::deque<SDL_Point> body;
 	int cellSize;
 	Direction direction;
+	std::deque<SDL_Point> body;
 };
 
 class Game
@@ -82,7 +85,8 @@ public:
 	void update();
 	void render();
 	void clean();
-	
+	int setScore(int& score);
+	int getScore() { return score; }
 	bool running()
 	{ 
 		return isRunning; 
@@ -94,8 +98,10 @@ public:
 
 private:
 	bool isRunning;
+	int score;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+
 	Snake snake;
 	Board board;
 	Fruit fruit;
