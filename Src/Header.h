@@ -2,6 +2,8 @@
 #include <iostream>
 #include <SDL.h>
 #include <deque>
+#include <cstdlib>
+#include <ctime>
 
 class Board
 {
@@ -54,6 +56,8 @@ public:
 	void move();
 	bool checkCollision();
 	bool checkFruitCollision(Fruit& fruit);
+	bool checkSelfCollision(Snake& snake);
+	bool checkFruitLocation(Fruit& fruit);
 	void grow();
 	void render(SDL_Renderer* renderer);
 

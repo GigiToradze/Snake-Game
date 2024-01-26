@@ -1,6 +1,4 @@
 #include "Header.h"
-#include <cstdlib>
-#include <ctime>
 
 Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), snake(448, 448, 32), board(800, 800, 32), fruit(32) {}
 Game::~Game() {}
@@ -16,17 +14,13 @@ Board::~Board() {}
 
 void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag)
 {
-
 	if (SDL_Init(SDL_INIT_EVERYTHING) == 0)
 	{
 		std::cout << "Initialised successfully" << std::endl;
-
 		window = SDL_CreateWindow(title, xpos, ypos, width, height, flag);
-
 		if (window != nullptr)
 		{
 			renderer = SDL_CreateRenderer(window, -1, 0);
-
 			if (renderer != nullptr)
 			{
 				isRunning = true;
@@ -46,17 +40,16 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, in
 		std::cout << "SDL could not be initialised! SDL_Error: " << SDL_GetError() << std::endl;
 	}
 }
+
 void Game::handleEvents()
 {
 	SDL_Event event;
-
 	while (SDL_PollEvent(&event) != 0)
 	{
 		if (event.type == SDL_QUIT)
 		{
 			isRunning = false;
 		}
-		
 		if (event.type == SDL_KEYDOWN)
 		{
 			switch (event.key.keysym.sym)
@@ -79,10 +72,12 @@ void Game::handleEvents()
 		}
 	}
 }
+
 void Game::update()
 {
-	if (snake.checkCollision())
+	if (snake.checkCollision() || snake.checkSelfCollision(snake))
 	{
+		std::cout << "Game Over!" << std::endl;
 		isRunning = false;
 	}
 	else
@@ -91,7 +86,12 @@ void Game::update()
 		{
 			snake.grow();
 			fruit.spawn();
+			while (snake.checkFruitLocation(fruit))
+			{
+				fruit.spawn();
+			}
 		}
+
 		snake.move();
 	}
 }
@@ -110,7 +110,6 @@ void Game::clean()
 	SDL_Quit();
 }
 
-
 void Board::drawBorder(SDL_Renderer* renderer)
 {
 	border.x = 96;
@@ -128,7 +127,6 @@ void Board::drawBorder(SDL_Renderer* renderer)
 void Snake::render(SDL_Renderer* renderer)
 {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-
     for (const SDL_Point& bodyPart : body)
     {
         SDL_Rect rect = { bodyPart.x, bodyPart.y, cellSize, cellSize };
@@ -176,7 +174,6 @@ bool Snake::checkCollision()
 	
 	if (head.x < 96 || head.x > 770 || head.y < 96 || head.y > 770)	
 	{
-		std::cout << "Hallooo" << std::endl;
 		return true;
 	}
 	
@@ -194,10 +191,37 @@ bool Snake::checkFruitCollision(Fruit& fruit)
 	return false;
 }
 
+bool Snake::checkSelfCollision(Snake& snake)
+{
+	SDL_Point head = body.front();
+
+	for (auto i = body.begin() + 1; i != body.end(); ++i)
+	{
+		if (head.x == i->x && head.y == i->y)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Snake::checkFruitLocation(Fruit& fruit)
+{
+	for (auto i = body.begin() + 1; i != body.end(); ++i)
+	{
+		if (fruit.getX() == i->x && fruit.getY() == i->y)
+		{
+			std::cout << "Fruit generated inside the snake body!" << std::endl;
+			return true;
+		}
+	}
+	return false;
+}
 void Snake::grow()
 {
 	body.push_back(body.back());
 }
+
 Fruit::Fruit(int cellSize) : size(cellSize), cellSize(cellSize)
 {
 	spawn();
