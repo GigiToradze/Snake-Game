@@ -1,44 +1,99 @@
 #include "Header.h"
 
-Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), snake(448, 448, 32), board(800, 800, 32, 10), fruit(32), score() {}
+Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), gameState(NULL), snake(448, 448, 32), board(800, 800, 32, 10), fruit(32), score(), cursorX(NULL), cursorY(NULL), hover(false),
+				startButton(renderer, { 290, 320, 325, 55 }, "Start", nullptr, { 255, 255, 255 }), 
+				quitButton(renderer, { 290, 420, 325, 55 }, "Quit", nullptr, { 255, 255, 255 }) {}
+
 Game::~Game() {}
 
-Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), direction(UP)
-{
+Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), direction(UP) {
 	body.push_front({ initialX, initialY });
 }
 Snake::~Snake() {}
 
-Board::Board(int width, int height, int cellSize, int score) : width(width), height(height), border{}, cellSize(cellSize), font(), score() {}
+Board::Board(int width, int height, int cellSize, int score) : width(width), height(height), border{}, cellSize(cellSize), font(), score(), menuRect{} {}
 Board::~Board() {}
 
-void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag)
-{
-	if (SDL_Init(SDL_INIT_EVERYTHING) == 0 && TTF_Init() == 0)
-	{
+Button::Button(SDL_Renderer* renderer, const SDL_Rect& rect, const std::string& text, TTF_Font* font, const SDL_Color& color)
+	: buttonRect(rect), buttonText(text), font(font), buttonColor(color), textTexture(nullptr) {}
+
+Button::~Button() {}
+
+void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag) {
+	if (SDL_Init(SDL_INIT_EVERYTHING) == 0 && TTF_Init() == 0) {
 		std::cout << "Initialised successfully" << std::endl;
 		window = SDL_CreateWindow(title, xpos, ypos, width, height, flag);
-		if (window != nullptr)
-		{
+		if (window != nullptr) {
 			renderer = SDL_CreateRenderer(window, -1, 0);
-			if (renderer != nullptr)
+			if (renderer != nullptr) { isRunning = true; }
+			else { std::cout << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl; }
+		}
+		else { std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl; }
+	}
+	else { std::cout << "SDL could not be initialised! SDL_Error: " << SDL_GetError() << std::endl; }
+}
+
+void Game::handleMainMenuEvents() {
+	SDL_Event menuEvent;
+
+	while (SDL_PollEvent(&menuEvent) != 0)
+	{
+		if (menuEvent.type == SDL_QUIT)
+		{
+			isRunning = false;
+		}
+
+		if (menuEvent.type == SDL_MOUSEMOTION)
+		{
+			SDL_GetMouseState(&cursorX, &cursorY);
+			if (buttonChoice(cursorX, cursorY) == start)
 			{
-				isRunning = true;
+				hover = true;
+				
 			}
 			else
 			{
-				std::cout << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+				hover = false;
 			}
 		}
-		else
+		else if (menuEvent.type == SDL_MOUSEBUTTONDOWN)
 		{
-			std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+			SDL_GetMouseState(&cursorX, &cursorY);
+
+			if (menuEvent.button.button == SDL_BUTTON_LEFT)
+			{
+				if (buttonChoice(cursorX, cursorY) == start)
+				{
+					gameState = IN_GAME;
+				}
+				else if (buttonChoice(cursorX, cursorY) == quit)
+				{
+					isRunning = false;
+				}
+			}
 		}
 	}
-	else
+}
+void Game::drawHover()
+{
+	SDL_Rect hoverRect = { 290 + 8, 360 + 15, 325, 8 };
+	SDL_Rect hoverRectTwo = { 615, 320 + 8, 8, 47 };
+	if (hover)
 	{
-		std::cout << "SDL could not be initialised! SDL_Error: " << SDL_GetError() << std::endl;
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+		SDL_RenderFillRect(renderer, &hoverRect);
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+		SDL_RenderFillRect(renderer, &hoverRectTwo);
+		SDL_RenderPresent(renderer);
 	}
+}
+void Game::renderMainMenu()
+{
+	board.drawMenu(renderer);
+	startButton.drawButton(renderer);
+	quitButton.drawButton(renderer);
+	drawHover();
+	SDL_RenderPresent(renderer);
 }
 
 void Game::handleEvents()
@@ -50,6 +105,7 @@ void Game::handleEvents()
 		{
 			isRunning = false;
 		}
+		
 		if (event.type == SDL_KEYDOWN)
 		{
 			switch (event.key.keysym.sym)
@@ -69,7 +125,7 @@ void Game::handleEvents()
 			default:
 				break;
 			}
-		}
+		}	
 	}
 }
 
@@ -92,12 +148,12 @@ void Game::update()
 				fruit.spawn();
 			}
 		}
-
 		snake.move();
 	}
 }
 void Game::render()
 {
+
 	board.drawBorder(renderer);
 	board.displayText(renderer, getScore());
 	fruit.render(renderer);
@@ -121,6 +177,47 @@ int Game::setScore(int& score)
 	}
 	return score;
 }
+
+int Game::buttonChoice(int cursorX, int cursorY)
+{
+	if (cursorX >= 290 && cursorX <= 290 + 325 && cursorY >= 320 && cursorY <= 320 + 55)
+	{
+		return start;
+	}
+	else if (cursorX >= 290 && cursorX <= 290 + 325 && cursorY >= 420 && cursorY <= 420 + 55)
+	{
+		return quit;
+	}
+
+	return none;
+}
+
+void Board::drawMenu(SDL_Renderer* renderer)
+{
+	menuRect = { 200, 150, 500, 600 };
+
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_RenderFillRect(renderer, &menuRect);
+
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+	SDL_RenderDrawRect(renderer, &menuRect);
+
+	font = TTF_OpenFont("Assets/PressStart2P-Regular.ttf", 34);
+	SDL_Color textColor = { 255, 255, 255 };
+
+	std::string scoreText = "Main Menu" ;
+
+	SDL_Surface* textSurface = TTF_RenderText_Solid(font, scoreText.c_str(), textColor);
+	SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+	SDL_Rect textRect = { 305, 220, textSurface->w, textSurface->h };
+	SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+
+	SDL_FreeSurface(textSurface);
+	SDL_DestroyTexture(textTexture);
+
+}
+
 void Board::drawBorder(SDL_Renderer* renderer)
 {
 	border.x = 96;
@@ -267,4 +364,28 @@ void Fruit::render(SDL_Renderer* renderer)
 
 	SDL_Rect rect = { x, y, size, size };
 	SDL_RenderFillRect(renderer, &rect);
+}
+
+void Button::drawButton(SDL_Renderer* renderer)
+{
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_RenderFillRect(renderer, &buttonRect);
+
+	SDL_SetRenderDrawColor(renderer, buttonColor.r, buttonColor.g, buttonColor.b, SDL_ALPHA_OPAQUE);
+	SDL_RenderDrawRect(renderer, &buttonRect);
+
+	font = TTF_OpenFont("Assets/PressStart2P-Regular.ttf", 20);
+	SDL_Color textColor = { 255, 255, 255 };
+
+	SDL_Surface* textSurface = TTF_RenderText_Solid(font, buttonText.c_str(), textColor);
+	SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+	SDL_Rect textRect = { buttonRect.x + (buttonRect.w - textSurface->w) / 2,
+						buttonRect.y + (buttonRect.h - textSurface->h) / 2, 
+						textSurface->w, textSurface->h};
+	SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+
+	SDL_FreeSurface(textSurface);
+	SDL_DestroyTexture(textTexture);
+
 }
