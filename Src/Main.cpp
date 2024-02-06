@@ -25,13 +25,11 @@ int main(int argc, char* args[])
             game.render();
             break;
             
-        // case Game::GAME_OVER:
-        //     game.handleGameOverEvents();
-        //     game.renderGameOver();
-        //     break;
+        //case Game::GAME_OVER:
+        //    game.handleGameOverEvents();
+         //   game.renderGameOver();
+         //   break;
         }
-
-        
     }
 	game.clean();
 

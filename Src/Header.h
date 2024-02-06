@@ -31,8 +31,13 @@ class Button {
 public:
 	Button(SDL_Renderer* renderer, const SDL_Rect& rect, const std::string& text, TTF_Font* font, const SDL_Color& color);
 	~Button();
-	void drawButton(SDL_Renderer* renderer);
 
+	enum button { none, start, quit };
+
+	void drawButton(SDL_Renderer* renderer);
+	void drawHover(SDL_Renderer* renderer);
+	bool checkHover(int cursorX, int cursorY);
+	
 private:
 	SDL_Rect buttonRect;
 	SDL_Color buttonColor;
@@ -59,6 +64,7 @@ private:
 	int size;
 	int cellSize;
 };
+
 class Snake {
 public:
 	Snake(int initialX, int initialY, int cellSize);
@@ -91,6 +97,7 @@ public:
 	void init(const char* title, int xpos, int ypos, int width, int height, int flag);
 	
 	void handleMainMenuEvents();
+	void updateMenu();
 	void renderMainMenu();
 
 	void handleEvents();
@@ -101,7 +108,15 @@ public:
 	void handleGameOverEvents();
 	void renderGameOver();
 
-	enum option { none, start, quit };
+	// Main menu items
+	void hoverButtonCheck();
+	void clickButtonCheck();
+
+	int hover;
+	int cursorX, cursorY;
+
+	enum button { none, start, quit };
+
 	enum GameState { MAIN_MENU, IN_GAME, GAME_OVER };
 
 	void setGameState(int initialState) { gameState = initialState; }
@@ -110,20 +125,13 @@ public:
 	int setScore(int& score);
 	int getScore() { return score; }
 
-	int getCursorX() { return cursorX; }
-	int getCursorY() { return cursorY; }
-
-	int buttonChoice(int cursorX, int cursorY);
-
 	bool running() { return isRunning; }
 	SDL_Renderer* getRenderer() { return renderer; }
 
-	void drawHover();
-	bool hover;
+	bool ableToSetNewDirection;
 
 private:
 	int gameState;
-	int cursorX, cursorY;
 	bool isRunning;
 	int score;
 	SDL_Window* window;
