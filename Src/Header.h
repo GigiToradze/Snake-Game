@@ -12,12 +12,13 @@ public:
 	Board(int width, int height, int cellSize, int score);
 	~Board();
 
-	void drawMenu(SDL_Renderer* renderer);
+	void drawMenu(SDL_Renderer* renderer, std::string title);
 	void drawBorder(SDL_Renderer* renderer);
 	void displayText(SDL_Renderer* renderer, int score);
 	void setScore(int newScore) { score = newScore; }
 	
 private:
+	std::string title;
 	TTF_Font* font;
 	SDL_Rect border;
 	SDL_Rect menuRect;
@@ -36,7 +37,7 @@ public:
 
 	void drawButton(SDL_Renderer* renderer);
 	void drawHover(SDL_Renderer* renderer);
-	bool checkHover(int cursorX, int cursorY);
+	bool checkHover(int cursorX, int cursorY) const;
 	
 private:
 	SDL_Rect buttonRect;
@@ -55,8 +56,8 @@ public:
 	void render(SDL_Renderer* renderer);
 
 	SDL_Point getPosition() { return { x, y }; }
-	int getX() { return x; }
-	int getY() { return y; }
+	int getX() const { return x; }
+	int getY() const { return y; }
 
 private:
 	int x;
@@ -67,7 +68,7 @@ private:
 
 class Snake {
 public:
-	Snake(int initialX, int initialY, int cellSize);
+	Snake(int cellSize);
 	~Snake();
 
 	enum Direction { UP, RIGHT, DOWN, LEFT };
@@ -79,14 +80,39 @@ public:
 	bool checkSelfCollision(Snake& snake);
 	bool checkFruitLocation(Fruit& fruit);
 	void render(SDL_Renderer* renderer);
+	void setX(int newX) { initialX = newX; }
+	void setY(int newY) { initialY = newY; }
+	void reset();
 
 	SDL_Point getHead() { return body.front(); }
 	void setDirection(Direction newDirection);
 
 private:
+	int initialX, initialY;
 	int cellSize;
 	Direction direction;
 	std::deque<SDL_Point> body;
+};
+
+class Menu {
+public:
+	Menu(SDL_Renderer* renderer);
+	~Menu();
+
+	void renderMainMenu(SDL_Renderer* renderer);
+	void renderGameOver(SDL_Renderer* renderer);
+
+	void hoverButtonCheck();
+	int clickButtonCheck();
+	enum button { none, start, quit };
+
+private:
+	Board board;
+	Button restartButton;
+	Button startButton;
+	Button quitButton;
+	int hover;
+	int cursorX, cursorY;
 };
 
 class Game {
@@ -97,8 +123,6 @@ public:
 	void init(const char* title, int xpos, int ypos, int width, int height, int flag);
 	
 	void handleMainMenuEvents();
-	void updateMenu();
-	void renderMainMenu();
 
 	void handleEvents();
 	void update();
@@ -106,26 +130,16 @@ public:
 	void clean();
 
 	void handleGameOverEvents();
-	void renderGameOver();
-
-	// Main menu items
-	void hoverButtonCheck();
-	void clickButtonCheck();
-
-	int hover;
-	int cursorX, cursorY;
-
-	enum button { none, start, quit };
 
 	enum GameState { MAIN_MENU, IN_GAME, GAME_OVER };
 
 	void setGameState(int initialState) { gameState = initialState; }
-	int getGameState() { return gameState; }
+	int getGameState() const { return gameState; }
 
 	int setScore(int& score);
-	int getScore() { return score; }
+	int getScore() const { return score; }
 
-	bool running() { return isRunning; }
+	bool running() const { return isRunning; }
 	SDL_Renderer* getRenderer() { return renderer; }
 
 	bool ableToSetNewDirection;
@@ -137,8 +151,8 @@ private:
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 
-	Button startButton;
-	Button quitButton;
+	Menu gameOverMenu;
+	Menu mainMenu;
 	Board board;
 	Snake snake;
 	Fruit fruit;

@@ -1,61 +1,27 @@
 #include "Header.h"
 
-Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), gameState(NULL), snake(448, 448, 32),
-				board(800, 800, 32, 10), fruit(32), score(), cursorX(NULL), cursorY(NULL), hover(false), ableToSetNewDirection(false),
-	startButton(renderer, { 290, 320, 325, 55 }, "Start", nullptr, { 255, 255, 255 }),
-	quitButton(renderer, { 290, 420, 325, 55 }, "Quit", nullptr, { 255, 255, 255 }) {}
-Game::~Game() {}
+Menu::Menu(SDL_Renderer* renderer) : cursorX(NULL), cursorY(NULL), hover(false), board(800, 800, 32, 10),
+				startButton(renderer, { 290, 320, 325, 55 }, "Start", nullptr, { 255, 255, 255 }),
+				quitButton(renderer, { 290, 420, 325, 55 }, "Quit", nullptr, { 255, 255, 255 }),
+				restartButton(renderer, { 290, 320, 325, 55 }, "Restart", nullptr, {255, 255, 255 }) {}
 
-Snake::Snake(int initialX, int initialY, int cellSize) : cellSize(cellSize), direction(UP) {
-	body.push_front({ initialX, initialY });
-}
-Snake::~Snake() {}
+Menu::~Menu() { std::cout << "Destructor executed!" << std::endl; }
+void Menu::renderGameOver(SDL_Renderer* renderer) {
 
-Board::Board(int width, int height, int cellSize, int score) : width(width), height(height), 
-			border{}, cellSize(cellSize), font(), score(), menuRect{} {}
-Board::~Board() {}
+	board.drawMenu(renderer, "Game Over");
+	restartButton.drawButton(renderer);
+	quitButton.drawButton(renderer);
 
-Button::Button(SDL_Renderer* renderer, const SDL_Rect& rect, const std::string& text, TTF_Font* font, const SDL_Color& color)
-	: buttonRect(rect), buttonText(text), font(font), buttonColor(color), textTexture(nullptr) {}
-
-Button::~Button() {}
-
-void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag) {
-	if (SDL_Init(SDL_INIT_EVERYTHING) == 0 && TTF_Init() == 0) {
-		std::cout << "Initialised successfully" << std::endl;
-		window = SDL_CreateWindow(title, xpos, ypos, width, height, flag);
-		if (window != nullptr) {
-			renderer = SDL_CreateRenderer(window, -1, 0);
-			if (renderer != nullptr) { isRunning = true; }
-			else { std::cout << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl; }
-		}
-		else { std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl; }
+	if (hover == start) {
+		restartButton.drawHover(renderer);
 	}
-	else { std::cout << "SDL could not be initialised! SDL_Error: " << SDL_GetError() << std::endl; }
+	else if (hover == quit) {
+		quitButton.drawHover(renderer);
+	};
+
+	SDL_RenderPresent(renderer);
 }
-
-void Game::handleMainMenuEvents() {
-	SDL_Event menuEvent;
-
-	while (SDL_PollEvent(&menuEvent) != 0)
-	{
-		if (menuEvent.type == SDL_QUIT)
-		{
-			isRunning = false;
-		}
-
-		if (menuEvent.type == SDL_MOUSEMOTION)
-		{
-			hoverButtonCheck();
-		}
-		else if (menuEvent.type == SDL_MOUSEBUTTONDOWN && menuEvent.button.button == SDL_BUTTON_LEFT)
-		{
-			clickButtonCheck();
-		}
-	}
-}
-
-void Game::hoverButtonCheck()
+void Menu::hoverButtonCheck()
 {
 	SDL_GetMouseState(&cursorX, &cursorY);
 
@@ -70,22 +36,48 @@ void Game::hoverButtonCheck()
 	}
 }
 
-void Game::clickButtonCheck()
+int Menu::clickButtonCheck()
 {
 	SDL_GetMouseState(&cursorX, &cursorY);
 
 	if (startButton.checkHover(cursorX, cursorY)) {
-		gameState = IN_GAME;
+		//gameState = IN_GAME;
+		return start;
 	}
 	else if (quitButton.checkHover(cursorX, cursorY)) {
-		isRunning = false;
+		//isRunning = false;
+		return quit;
+	}
+	else
+	{
+		return none;
 	}
 }
+void Menu::renderMainMenu(SDL_Renderer* renderer)
+{
+	board.drawMenu(renderer, "Main Menu");
+	startButton.drawButton(renderer);
+	quitButton.drawButton(renderer);
 
-bool Button::checkHover(int cursorX, int cursorY)
+	if (hover == start) {
+		startButton.drawHover(renderer);
+	}
+	else if (hover == quit) {
+		quitButton.drawHover(renderer);
+	};
+
+	SDL_RenderPresent(renderer);
+}
+
+Button::Button(SDL_Renderer* renderer, const SDL_Rect& rect, const std::string& text, TTF_Font* font, const SDL_Color& color)
+	: buttonRect(rect), buttonText(text), font(font), buttonColor(color), textTexture(nullptr) {}
+
+Button::~Button() {}
+bool Button::checkHover(int cursorX, int cursorY) const
 {
 	if (cursorX >= buttonRect.x && cursorX <= buttonRect.x + buttonRect.w && cursorY >= buttonRect.y && cursorY <= buttonRect.y + buttonRect.h)
 	{
+		std::cout << "X: " << cursorX << "Y: " << cursorY << std::endl;
 		return true;
 	}
 
@@ -126,23 +118,80 @@ void Button::drawButton(SDL_Renderer* renderer)
 	SDL_DestroyTexture(textTexture);
 
 }
+Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), gameState(NULL), snake(32),
+fruit(32), score(), ableToSetNewDirection(false), board(800, 800, 32, 10), mainMenu(renderer), gameOverMenu(renderer) {}
 
-void Game::renderMainMenu()
-{
-	board.drawMenu(renderer);
-	startButton.drawButton(renderer);
-	quitButton.drawButton(renderer);
-
-	if (hover == start) {
-		startButton.drawHover(renderer);
+Game::~Game() {}
+void Game::init(const char* title, int xpos, int ypos, int width, int height, int flag) {
+	if (SDL_Init(SDL_INIT_EVERYTHING) == 0 && TTF_Init() == 0) {
+		std::cout << "Initialised successfully" << std::endl;
+		window = SDL_CreateWindow(title, xpos, ypos, width, height, flag);
+		if (window != nullptr) {
+			renderer = SDL_CreateRenderer(window, -1, 0);
+			if (renderer != nullptr) { isRunning = true; }
+			else { std::cout << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl; }
+		}
+		else { std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl; }
 	}
-	else if (hover == quit) {
-		quitButton.drawHover(renderer);
-	};
+	else { std::cout << "SDL could not be initialised! SDL_Error: " << SDL_GetError() << std::endl; }
+}
+void Game::handleGameOverEvents() {
+	SDL_Event event;
+	gameOverMenu.renderGameOver(renderer);
+	while (SDL_PollEvent(&event) != 0) {
+		if (event.type == SDL_QUIT)
+		{
+			isRunning = false;
+		}
 
-	SDL_RenderPresent(renderer);
+		if (event.type == SDL_MOUSEMOTION)
+		{
+			gameOverMenu.hoverButtonCheck();
+		}
+		else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+		{
+			if (gameOverMenu.clickButtonCheck() == 1) {
+				snake.setX(448);
+				snake.setY(448);
+				snake.reset();
+				score = 0;
+				fruit.spawn();
+				gameState = IN_GAME;
+			}
+			else if (gameOverMenu.clickButtonCheck() == 2) {
+				isRunning = false;
+			}
+		}
+	}
 }
 
+void Game::handleMainMenuEvents() {
+	SDL_Event menuEvent;
+
+	mainMenu.renderMainMenu(renderer);
+
+	while (SDL_PollEvent(&menuEvent) != 0)
+	{
+		if (menuEvent.type == SDL_QUIT)
+		{
+			isRunning = false;
+		}
+
+		if (menuEvent.type == SDL_MOUSEMOTION)
+		{
+			mainMenu.hoverButtonCheck();
+		}
+		else if (menuEvent.type == SDL_MOUSEBUTTONDOWN && menuEvent.button.button == SDL_BUTTON_LEFT)
+		{
+			if (mainMenu.clickButtonCheck() == 1) {
+				gameState = IN_GAME;
+			}
+			else if (mainMenu.clickButtonCheck() == 2) {
+				isRunning = false;
+			}
+		}
+	}
+}
 void Game::handleEvents()
 {
 	SDL_Event event;
@@ -186,7 +235,8 @@ void Game::update()
 	if (snake.checkCollision() || snake.checkSelfCollision(snake))
 	{
 		std::cout << "Game Over!" << std::endl;
-		isRunning = false;
+		//isRunning = false;
+		gameState = GAME_OVER;
 	}
 	else if (isRunning)
 	{
@@ -230,8 +280,10 @@ int Game::setScore(int& score)
 	}
 	return score;
 }
-
-void Board::drawMenu(SDL_Renderer* renderer)
+Board::Board(int width, int height, int cellSize, int score) : width(width), height(height),
+border{}, cellSize(cellSize), font(), score(), menuRect{} {}
+Board::~Board() {}
+void Board::drawMenu(SDL_Renderer* renderer, std::string title)
 {
 	menuRect = { 200, 150, 500, 600 };
 
@@ -244,9 +296,9 @@ void Board::drawMenu(SDL_Renderer* renderer)
 	font = TTF_OpenFont("Assets/PressStart2P-Regular.ttf", 34);
 	SDL_Color textColor = { 255, 255, 255 };
 
-	std::string scoreText = "Main Menu" ;
+	//std::string title = "Main Menu" ;
 
-	SDL_Surface* textSurface = TTF_RenderText_Solid(font, scoreText.c_str(), textColor);
+	SDL_Surface* textSurface = TTF_RenderText_Solid(font, title.c_str(), textColor);
 	SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
 
 	SDL_Rect textRect = { 305, 220, textSurface->w, textSurface->h };
@@ -287,6 +339,10 @@ void Board::displayText(SDL_Renderer* renderer, int score)
 	SDL_DestroyTexture(textTexture);
 }
 
+Snake::Snake(int cellSize) : cellSize(cellSize), direction(UP), initialX(448), initialY(448) {
+	body.push_front({ initialX, initialY });
+}
+Snake::~Snake() {}
 void Snake::render(SDL_Renderer* renderer)
 {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
@@ -383,7 +439,12 @@ void Snake::grow()
 {
 	body.push_back(body.back());
 }
-
+void Snake::reset()
+{
+	body.clear();
+	body.push_front({ initialX, initialY });
+	direction = UP;
+}
 Fruit::Fruit(int cellSize) : size(cellSize), cellSize(cellSize)
 {
 	spawn();

@@ -6,6 +6,7 @@ int main(int argc, char* args[])
 	const int window_height = 896;
 	srand(static_cast<unsigned>(time(NULL)));
 	Game game;
+    
 	game.init("Snake Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, SDL_WINDOW_SHOWN);
     game.setGameState(game.MAIN_MENU);
 
@@ -15,7 +16,6 @@ int main(int argc, char* args[])
         {
         case Game::MAIN_MENU:
             game.handleMainMenuEvents();
-            game.renderMainMenu();
             break;
         
         case Game::IN_GAME:
@@ -25,10 +25,9 @@ int main(int argc, char* args[])
             game.render();
             break;
             
-        //case Game::GAME_OVER:
-        //    game.handleGameOverEvents();
-         //   game.renderGameOver();
-         //   break;
+        case Game::GAME_OVER:
+            game.handleGameOverEvents();
+            break;
         }
     }
 	game.clean();
