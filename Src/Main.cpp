@@ -1,4 +1,7 @@
-#include "Header.h"
+#include "..\lib\Game.h"
+
+#include <cstdlib>
+#include <ctime>
 
 int main(int argc, char* args[])
 {
@@ -20,15 +23,18 @@ int main(int argc, char* args[])
         
         case Game::IN_GAME:
             SDL_Delay(250);
-            game.handleEvents();
+            game.handleEvents(); 
             game.update();
             game.render();
             break;
-            
         case Game::GAME_OVER:
             game.handleGameOverEvents();
             break;
+        case Game::PAUSE_MENU:
+            game.handlePauseMenuEvents();
+            break;
         }
+
     }
 	game.clean();
 
