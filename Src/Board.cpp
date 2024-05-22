@@ -1,5 +1,5 @@
 #include "..\lib\Board.h"
-
+#include <iostream>
 Board::Board(int width, int height, int cellSize, int score) : width(width), height(height),
 border{}, pauseRect1{}, pauseRect2{}, cellSize(cellSize), font(), score(), menuRect{} {}
 
@@ -21,7 +21,8 @@ void Board::drawMenu(SDL_Renderer* renderer, std::string title)
 	SDL_Surface* textSurface = TTF_RenderText_Solid(font, title.c_str(), textColor);
 	SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
 
-	SDL_Rect textRect = { 305, 220, textSurface->w, textSurface->h };
+
+	SDL_Rect textRect = { menuRect.x + (menuRect.w - textSurface->w) / 2, 220, textSurface->w, textSurface->h };
 	SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
 
 	SDL_FreeSurface(textSurface);
@@ -42,7 +43,7 @@ void Board::drawBorder(SDL_Renderer* renderer)
 	SDL_RenderDrawRect(renderer, &border);
 }
 
-void Board::displayText(SDL_Renderer* renderer, int score)
+void Board::displayScore(SDL_Renderer* renderer, int score)
 {
 	font = TTF_OpenFont("Assets/PressStart2P-Regular.ttf", 18);
 	SDL_Color textColor = { 255, 255, 255 };

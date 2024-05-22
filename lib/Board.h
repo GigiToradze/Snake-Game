@@ -11,7 +11,7 @@ public:
 
 	void drawMenu(SDL_Renderer* renderer, std::string title);
 	void drawBorder(SDL_Renderer* renderer);
-	void displayText(SDL_Renderer* renderer, int score);
+	void displayScore(SDL_Renderer* renderer, int score);
 	void setScore(int newScore) { score = newScore; }
 	void drawPause(SDL_Renderer* renderer);
 

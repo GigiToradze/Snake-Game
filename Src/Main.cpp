@@ -11,16 +11,18 @@ int main(int argc, char* args[])
 	Game game;
     
 	game.init("Snake Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, SDL_WINDOW_SHOWN);
-    game.setGameState(game.MAIN_MENU);
+    game.setGameState(game.AUTH_MENU);
 
     while (game.running())
     {
         switch (game.getGameState())
         {
+        case Game::AUTH_MENU:
+            game.handleAuthMenuEvents();
+            break;
         case Game::MAIN_MENU:
             game.handleMainMenuEvents();
             break;
-        
         case Game::IN_GAME:
             SDL_Delay(250);
             game.handleEvents(); 
@@ -32,6 +34,15 @@ int main(int argc, char* args[])
             break;
         case Game::PAUSE_MENU:
             game.handlePauseMenuEvents();
+            break;
+        case Game::REGISTRATION:
+            game.handleRegistrationEvents();
+            break;
+        case Game::LOGIN:
+            game.handleLoginEvents();
+            break;
+        case Game::LEADERBOARD:
+            game.handleLeaderboardEvents();
             break;
         }
 

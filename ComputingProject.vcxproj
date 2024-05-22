@@ -170,6 +170,7 @@
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\Snake.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="Src\User.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\Game.h" />
@@ -178,6 +179,7 @@
     <ClInclude Include="lib\Fruit.h" />
     <ClInclude Include="lib\Snake.h" />
     <ClInclude Include="lib\Menu.h" />
+    <ClInclude Include="lib\User.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

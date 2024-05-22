@@ -2,7 +2,8 @@
 
 Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), pause(false), gameState(NULL), snake(32),
 fruit(32), score(), ableToSetNewDirection(false), board(800, 800, 32, 10), mainMenu(renderer), gameOverMenu(renderer), 
-pauseMenu(renderer), button(renderer, { 750, 40, 50, 50 }, "", nullptr, { 255, 255, 255 }) {}
+pauseMenu(renderer), authMenu(renderer), button(renderer, { 750, 40, 50, 50 }, "", nullptr, { 255, 255, 255 }), regMenu(renderer), 
+loginMenu(renderer), submit(renderer, { 290, 530, 325, 55 }, "Submit", nullptr, { 255, 255, 255 }), leaderboardMenu(renderer), previousMenu(NULL) {}
 
 Game::~Game() {}
 
@@ -37,17 +38,52 @@ void Game::handleGameOverEvents() {
 				snake.setX(448);
 				snake.setY(448);
 				snake.reset();
+				
 				score = 0;
 				fruit.spawn();
 				gameState = IN_GAME;
 			}
 			else if (gameOverMenu.clickButtonCheck() == Menu::quit) {
+				//currentUser.setHighScore(score);
 				isRunning = false;
+			}
+			else if (gameOverMenu.clickButtonCheck() == Menu::leaderboard) {
+				// Variable to check from which menu is leaderboard menu selected
+				previousMenu = GAME_OVER;
+				gameState = LEADERBOARD;
+			}
+		}
+		currentUser.setHighScore(score);
+	}
+}
+void Game::handleLeaderboardEvents()
+{
+	SDL_Event leadEvent;
+	leaderboardMenu.renderLeaderboard(renderer);
+	while (SDL_PollEvent(&leadEvent) != 0) {
+		if (leadEvent.type == SDL_QUIT)
+		{
+			isRunning = false;
+		}
+		if (leadEvent.type == SDL_MOUSEMOTION)
+		{
+			leaderboardMenu.hoverButtonCheck();
+		}
+		else if (leadEvent.type == SDL_MOUSEBUTTONDOWN && leadEvent.button.button == SDL_BUTTON_LEFT)
+		{
+			if (leaderboardMenu.clickButtonCheck() == Menu::back)
+			{
+				if (previousMenu == GAME_OVER) {
+					gameState = GAME_OVER;
+				}
+				else if (previousMenu == MAIN_MENU)
+				{
+					gameState = MAIN_MENU;
+				}
 			}
 		}
 	}
 }
-
 void Game::handleMainMenuEvents() {
 	SDL_Event menuEvent;
 
@@ -71,6 +107,11 @@ void Game::handleMainMenuEvents() {
 			}
 			else if (mainMenu.clickButtonCheck() == Menu::quit) {
 				isRunning = false;
+			}
+			else if (mainMenu.clickButtonCheck() == Menu::leaderboard)
+			{
+				previousMenu = MAIN_MENU;
+				gameState = LEADERBOARD;
 			}
 		}
 	}
@@ -169,6 +210,483 @@ void Game::handlePauseMenuEvents()
 	}
 	SDL_RenderPresent(renderer);
 }
+void Game::handleAuthMenuEvents()
+{
+	SDL_Event authEvent;
+
+	authMenu.renderAuthMenu(renderer);
+
+	while (SDL_PollEvent(&authEvent) != 0)
+	{
+		if (authEvent.type == SDL_QUIT)
+		{
+			isRunning = false;
+		}
+		if (authEvent.type == SDL_MOUSEMOTION)
+		{
+			authMenu.hoverButtonCheck();
+		}
+		else if (authEvent.type == SDL_MOUSEBUTTONDOWN && authEvent.button.button == SDL_BUTTON_LEFT)
+		{
+			if (authMenu.clickButtonCheck() == Menu::registration)
+			{
+				gameState = REGISTRATION;
+			}
+			else if (authMenu.clickButtonCheck() == Menu::login)
+			{
+				gameState = LOGIN;
+			}
+			else if (authMenu.clickButtonCheck() == Menu::quit)
+			{
+				isRunning = false;
+			}
+		}
+	}
+	SDL_RenderPresent(renderer);
+}
+
+void Game::handleRegistrationEvents()
+{
+	SDL_Event regEvent;
+	int cursorX, cursorY;
+	SDL_Rect usernameField = { 290, 340, 325, 55 };
+	SDL_Rect passwordField = { 290, 450, 325, 55 };
+	bool usernameActive = false;
+	bool passwordActive = false;
+	std::string usernameInput = "";
+	std::string passwordInput = "";
+	SDL_Cursor* cursor = nullptr;
+	bool needsRedraw = true;
+	enum input { none, valid, invalid };
+	int usernameState = none;
+	int passwordState = none;
+	bool keyPressed = false;
+	bool submitHover = false;
+
+	SDL_StartTextInput();
+
+	// Create a target texture for double buffering
+	SDL_Texture* targetTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 896, 896);
+
+	while (isRunning && gameState == REGISTRATION)
+	{
+		while (SDL_PollEvent(&regEvent) != 0)
+		{
+			switch (regEvent.type)
+			{
+			case SDL_QUIT:
+				isRunning = false;
+				break;
+
+			case SDL_MOUSEMOTION:
+				SDL_GetMouseState(&cursorX, &cursorY);
+				if ((cursorX >= usernameField.x && cursorX <= usernameField.x + usernameField.w &&
+					cursorY >= usernameField.y && cursorY <= usernameField.y + usernameField.h) ||
+					(cursorX >= passwordField.x && cursorX <= passwordField.x + passwordField.w &&
+						cursorY >= passwordField.y && cursorY <= passwordField.y + passwordField.h))
+				{
+					cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+					SDL_SetCursor(cursor);
+				}
+				else
+				{
+					cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+					SDL_SetCursor(cursor);
+				}
+				needsRedraw = true;
+				// Check if the mouse is hovering over the submit button
+				if (usernameState == valid && passwordState == valid)
+				{
+					submitHover = submit.checkHover(cursorX, cursorY);
+				}
+				else
+				{
+					submitHover = false;
+				}
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+				if (regEvent.button.button == SDL_BUTTON_LEFT)
+				{
+					SDL_GetMouseState(&cursorX, &cursorY);
+					if (cursorX >= usernameField.x && cursorX <= usernameField.x + usernameField.w &&
+						cursorY >= usernameField.y && cursorY <= usernameField.y + usernameField.h)
+					{
+						usernameActive = true;
+						passwordActive = false;
+					}
+					else if (cursorX >= passwordField.x && cursorX <= passwordField.x + passwordField.w &&
+						cursorY >= passwordField.y && cursorY <= passwordField.y + passwordField.h)
+					{
+						passwordActive = true;
+						usernameActive = false;
+					}
+					else if (submit.checkHover(cursorX, cursorY))
+					{
+						std::ofstream file("user_data.txt", std::ios::app);
+						if (usernameState == valid && passwordState == valid)
+						{
+							if (file.is_open())
+							{
+								file << usernameInput << ":" << passwordInput << "\n";
+							}
+							file.close();
+							gameState = AUTH_MENU;
+							break;
+						}
+						gameState = AUTH_MENU;
+					}
+					else
+					{
+						usernameActive = false;
+						passwordActive = false;
+					}
+				}
+				break;
+
+			case SDL_TEXTINPUT:
+				if (usernameActive && usernameInput.length() < 18)
+				{
+					usernameInput += regEvent.text.text;
+				}
+				else if (passwordActive && passwordInput.length() < 18)
+				{
+					passwordInput += regEvent.text.text;
+				}
+				needsRedraw = true;
+				break;
+
+			case SDL_KEYDOWN:
+				std::ofstream file("user_data.txt", std::ios::app);
+				if (regEvent.key.keysym.sym == SDLK_BACKSPACE)
+				{
+					if (usernameActive && !usernameInput.empty())
+					{
+						usernameInput.pop_back();
+					}
+					else if (passwordActive && !passwordInput.empty())
+					{
+						passwordInput.pop_back();
+					}
+					needsRedraw = true;
+				}
+				else if (regEvent.key.keysym.sym == SDLK_RETURN)
+				{
+					keyPressed = true;
+					if (usernameState == valid && passwordState == valid)
+					{
+						if (file.is_open())
+						{
+							file << usernameInput << ":" << passwordInput << "\n";
+						}
+						file.close();
+						gameState = AUTH_MENU;
+						break;
+					}
+				}
+				break;
+			}
+			if (usernameInput.empty() && passwordInput.empty())
+			{
+				usernameState = none;
+				passwordState = none;
+			}
+			// Password and Username validation
+			if (!usernameInput.empty() && usernameInput.length() <= 15)
+			{
+				usernameState = valid;
+			}
+			else if (usernameInput.empty())
+			{
+				usernameState = invalid;
+			}
+			else
+			{
+				usernameState = invalid;
+			}
+
+			if (passwordInput.length() >= 8 && passwordInput.length() <= 15)
+			{
+				passwordState = valid;
+			}
+			else if (passwordInput.empty())
+			{
+				passwordState = invalid;
+			}
+			else
+			{
+				passwordState = invalid;
+			}
+		}
+
+		// Re-render if necessary
+		if (needsRedraw)
+		{
+			SDL_SetRenderTarget(renderer, targetTexture); // Set the render target to the texture
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+			SDL_RenderClear(renderer);
+
+			// Render the registration menu
+			regMenu.renderRegistration(renderer);
+
+			// Render the user input
+			regMenu.writeText(renderer, usernameInput, usernameField.x + 15, usernameField.y + 20);
+			regMenu.writeText(renderer, std::string(passwordInput.size(), '*'), passwordField.x + 15, passwordField.y + 20);
+
+			// Render the submit button only if both username and password are valid
+			if (usernameState == valid && passwordState == valid)
+			{
+				submit.drawButton(renderer);
+				if (submitHover)
+				{
+					submit.drawHover(renderer);
+				}
+			}
+
+			SDL_SetRenderTarget(renderer, nullptr); 
+			SDL_RenderCopy(renderer, targetTexture, nullptr, nullptr);
+			SDL_RenderPresent(renderer);
+
+			needsRedraw = false;
+		}
+
+		// Render error messages if any
+		if (keyPressed)
+		{
+			if (usernameState == invalid && passwordState == invalid)
+			{
+				regMenu.writeText(renderer, "Username and Password", 290, 550);
+				regMenu.writeText(renderer, "is not Valid!", 290, 590);
+				regMenu.writeText(renderer, "Please try again", 290, 630);
+				SDL_RenderPresent(renderer);
+			}
+			else if (usernameState == invalid)
+			{
+				regMenu.writeText(renderer, "Username is not Valid!", 290, 550);
+				SDL_RenderPresent(renderer);
+			}
+			else if (passwordState == invalid)
+			{
+				regMenu.writeText(renderer, "Password is not valid", 290, 550);
+				SDL_RenderPresent(renderer);
+			}
+			keyPressed = false;
+		}
+	}
+
+	SDL_StopTextInput();
+	if (cursor) SDL_FreeCursor(cursor);
+	SDL_DestroyTexture(targetTexture);
+}
+
+void Game::handleLoginEvents()
+{
+	SDL_Event loginEvent;
+	int cursorX, cursorY;
+	SDL_Rect usernameField = { 290, 340, 325, 55 };
+	SDL_Rect passwordField = { 290, 450, 325, 55 };
+	bool usernameActive = false;
+	bool passwordActive = false;
+	std::string usernameInput = "";
+	std::string passwordInput = "";
+	SDL_Cursor* cursor = nullptr;
+	bool needsRedraw = true;
+	enum input { none, valid, invalid };
+	int usernameState = none;
+	int passwordState = none;
+	bool keyPressed = false;
+	bool submitHover = false;
+	std::string storedUsername, storedPassword;
+	SDL_StartTextInput();
+
+	// Create a target texture for double buffering
+	SDL_Texture* targetTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 896, 896);
+
+	while (isRunning && gameState == LOGIN)
+	{
+		while (SDL_PollEvent(&loginEvent) != 0)
+		{
+			switch (loginEvent.type)
+			{
+			case SDL_QUIT:
+				isRunning = false;
+				break;
+
+			case SDL_MOUSEMOTION:
+
+				SDL_GetMouseState(&cursorX, &cursorY);
+				if ((cursorX >= usernameField.x && cursorX <= usernameField.x + usernameField.w &&
+					cursorY >= usernameField.y && cursorY <= usernameField.y + usernameField.h) ||
+					(cursorX >= passwordField.x && cursorX <= passwordField.x + passwordField.w &&
+						cursorY >= passwordField.y && cursorY <= passwordField.y + passwordField.h))
+				{
+					cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+					SDL_SetCursor(cursor);
+				}
+				else
+				{
+					cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+					SDL_SetCursor(cursor);
+				}
+				needsRedraw = true;
+				submitHover = submit.checkHover(cursorX, cursorY);
+
+
+			case SDL_MOUSEBUTTONDOWN:
+				if (loginEvent.button.button == SDL_BUTTON_LEFT)
+				{
+					SDL_GetMouseState(&cursorX, &cursorY);
+					if (cursorX >= usernameField.x && cursorX <= usernameField.x + usernameField.w &&
+						cursorY >= usernameField.y && cursorY <= usernameField.y + usernameField.h)
+					{
+						usernameActive = true;
+						passwordActive = false;
+					}
+					else if (cursorX >= passwordField.x && cursorX <= passwordField.x + passwordField.w &&
+						cursorY >= passwordField.y && cursorY <= passwordField.y + passwordField.h)
+					{
+						passwordActive = true;
+						usernameActive = false;
+					}
+					else if (submit.checkHover(cursorX, cursorY))
+					{
+						keyPressed = true;
+						std::ifstream file("user_data.txt");
+						if (file.is_open()) {
+							std::string storedUsername, storedPassword;
+							bool credentialsMatch = false;
+
+							std::string line;
+							while (std::getline(file, line)) {
+								std::istringstream iss(line);
+								if (std::getline(iss, storedUsername, ':') && std::getline(iss, storedPassword)) {
+
+									// Compare the stored credentials with user input
+									if (usernameInput == storedUsername && passwordInput == storedPassword) {
+										currentUser.setUsername(usernameInput);
+										gameState = MAIN_MENU;
+										credentialsMatch = true;
+										break;
+									}
+								}
+							}
+							file.close();
+
+							if (!credentialsMatch) {
+								usernameState = invalid;
+								passwordState = invalid;
+							}
+						}
+					}
+				}
+				break;
+
+			case SDL_TEXTINPUT:
+				if (usernameActive && usernameInput.length() < 18)
+				{
+					usernameInput += loginEvent.text.text;
+				}
+				else if (passwordActive && passwordInput.length() < 18)
+				{
+					passwordInput += loginEvent.text.text;
+				}
+				needsRedraw = true;
+				break;
+
+			case SDL_KEYDOWN:
+
+				if (loginEvent.key.keysym.sym == SDLK_BACKSPACE)
+				{
+					if (usernameActive && !usernameInput.empty())
+					{
+						usernameInput.pop_back();
+					}
+					else if (passwordActive && !passwordInput.empty())
+					{
+						passwordInput.pop_back();
+					}
+					needsRedraw = true;
+				}
+				else if (loginEvent.key.keysym.sym == SDLK_RETURN)
+				{
+					keyPressed = true;
+					std::ifstream file("user_data.txt");
+					if (file.is_open()) {
+						std::string storedUsername, storedPassword;
+						bool credentialsMatch = false;
+
+						std::string line;
+						while (std::getline(file, line)) {
+							std::istringstream iss(line);
+							if (std::getline(iss, storedUsername, ':') && std::getline(iss, storedPassword)) {
+
+								// Compare the stored credentials with user input
+								if (usernameInput == storedUsername && passwordInput == storedPassword) {
+									currentUser.setUsername(usernameInput);
+									gameState = MAIN_MENU;
+									credentialsMatch = true;
+									break;
+								}
+							}
+						}
+						file.close();
+
+						if (!credentialsMatch) {
+							usernameState = invalid;
+							passwordState = invalid;
+						}
+					}
+				}
+
+				break;
+			}
+
+		}
+		// Re-render if necessary
+		if (needsRedraw)
+		{
+			SDL_SetRenderTarget(renderer, targetTexture); // Set the render target to the texture
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+			SDL_RenderClear(renderer);
+
+			// Render the registration menu
+			loginMenu.renderLogin(renderer);
+
+			// Render the user input
+			loginMenu.writeText(renderer, usernameInput, usernameField.x + 15, usernameField.y + 20);
+			loginMenu.writeText(renderer, std::string(passwordInput.size(), '*'), passwordField.x + 15, passwordField.y + 20);
+
+			submit.drawButton(renderer);
+			if (submitHover)
+			{
+				submit.drawHover(renderer);
+			}
+
+			SDL_SetRenderTarget(renderer, nullptr);
+			SDL_RenderCopy(renderer, targetTexture, nullptr, nullptr);
+			SDL_RenderPresent(renderer);
+
+			needsRedraw = false;
+		}
+
+		// Render error messages if any
+		if (keyPressed)
+		{
+			if (usernameState == invalid || passwordState == invalid)
+			{
+				loginMenu.writeText(renderer, "Username or Password", 290, 600);
+				loginMenu.writeText(renderer, "is not Valid! ", 290, 625);
+				loginMenu.writeText(renderer, "Please try again", 290, 650);
+				SDL_RenderPresent(renderer);
+			}
+			keyPressed = false;
+		}
+	}
+
+	SDL_StopTextInput();
+	if (cursor) SDL_FreeCursor(cursor);
+	SDL_DestroyTexture(targetTexture);
+}
 
 void Game::update()
 {
@@ -203,7 +721,7 @@ void Game::render()
 	else if (gameState == PAUSE_MENU) {
 		button.drawFilledTriangle(renderer, 750, 40, 750, 70, 777, 55);
 	}
-	board.displayText(renderer, getScore());
+	board.displayScore(renderer, getScore());
 	fruit.render(renderer);
 
 	snake.render(renderer);

@@ -4,6 +4,9 @@
 #include "Board.h"
 #include "Snake.h"
 #include "Fruit.h"
+#include "User.h"
+
+#include <fstream>
 
 class Game {
 public:
@@ -21,7 +24,7 @@ public:
 
 	void handleGameOverEvents();
 
-	enum GameState { MAIN_MENU, IN_GAME, GAME_OVER, PAUSE_MENU};
+	enum GameState { AUTH_MENU, MAIN_MENU, IN_GAME, GAME_OVER, PAUSE_MENU, REGISTRATION, LOGIN, LEADERBOARD};
 
 	void setGameState(int initialState) { gameState = initialState; }
 	int getGameState() const { return gameState; }
@@ -36,8 +39,14 @@ public:
 	void setPause(const bool& currentPause) { pause = currentPause; }
 	bool ableToSetNewDirection;
 	void handlePauseMenuEvents();
+	void handleAuthMenuEvents();
+
+	void handleRegistrationEvents();
+	void handleLoginEvents();
+	void handleLeaderboardEvents();
 private:
 	int gameState;
+	int previousMenu;
 	bool isRunning;
 	int score;
 	bool pause;
@@ -47,8 +56,16 @@ private:
 	Menu gameOverMenu;
 	Menu mainMenu;
 	Menu pauseMenu;
+	Menu authMenu;
+	Menu regMenu;
+	Menu loginMenu;
+	Menu leaderboardMenu;
+
 	Button button;
+	Button submit;
 	Board board;
 	Fruit fruit;
 	Snake snake;
+
+	User currentUser;
 };
