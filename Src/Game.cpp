@@ -2,8 +2,10 @@
 
 Game::Game() : isRunning(false), window(nullptr), renderer(nullptr), pause(false), gameState(NULL), snake(32),
 fruit(32), score(), ableToSetNewDirection(false), board(800, 800, 32, 10), mainMenu(renderer), gameOverMenu(renderer), 
-pauseMenu(renderer), authMenu(renderer), button(renderer, { 750, 40, 50, 50 }, "", nullptr, { 255, 255, 255 }), regMenu(renderer), 
-loginMenu(renderer), submit(renderer, { 290, 530, 325, 55 }, "Submit", nullptr, { 255, 255, 255 }), leaderboardMenu(renderer), previousMenu(NULL) {}
+pauseMenu(renderer), authMenu(renderer), button(renderer, { 750, 40, 50, 50 }, "", nullptr, { 255, 255, 255 }), regMenu(renderer), loginMenu(renderer), 
+submit(renderer, { 290, 530, 325, 55 }, "Submit", nullptr, { 255, 255, 255 }), 
+backButton(renderer, { 290, 630, 325, 55 }, "Go back", nullptr, { 255, 255, 255 }),
+loginBackButton(renderer, { 290, 610, 325, 55 }, "Go back", nullptr, { 255, 255, 255 }), leaderboardMenu(renderer), previousMenu(NULL) {}
 
 Game::~Game() {}
 
@@ -262,9 +264,9 @@ void Game::handleRegistrationEvents()
 	int passwordState = none;
 	bool keyPressed = false;
 	bool submitHover = false;
-
+	bool backHover = false;
 	SDL_StartTextInput();
-
+	
 	// Create a target texture for double buffering
 	SDL_Texture* targetTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 896, 896);
 
@@ -303,6 +305,13 @@ void Game::handleRegistrationEvents()
 				{
 					submitHover = false;
 				}
+				if (backButton.checkHover(cursorX, cursorY))
+				{
+					backHover = true;
+				}
+				else {
+					backHover = false;
+				}
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
@@ -334,6 +343,9 @@ void Game::handleRegistrationEvents()
 							gameState = AUTH_MENU;
 							break;
 						}
+					}
+					else if (backButton.checkHover(cursorX, cursorY))
+					{
 						gameState = AUTH_MENU;
 					}
 					else
@@ -432,6 +444,8 @@ void Game::handleRegistrationEvents()
 			// Render the user input
 			regMenu.writeText(renderer, usernameInput, usernameField.x + 15, usernameField.y + 20);
 			regMenu.writeText(renderer, std::string(passwordInput.size(), '*'), passwordField.x + 15, passwordField.y + 20);
+			
+			backButton.drawButton(renderer);
 
 			// Render the submit button only if both username and password are valid
 			if (usernameState == valid && passwordState == valid)
@@ -441,6 +455,10 @@ void Game::handleRegistrationEvents()
 				{
 					submit.drawHover(renderer);
 				}
+			}
+			if (backHover)
+			{
+				backButton.drawHover(renderer);
 			}
 
 			SDL_SetRenderTarget(renderer, nullptr); 
@@ -457,7 +475,6 @@ void Game::handleRegistrationEvents()
 			{
 				regMenu.writeText(renderer, "Username and Password", 290, 550);
 				regMenu.writeText(renderer, "is not Valid!", 290, 590);
-				regMenu.writeText(renderer, "Please try again", 290, 630);
 				SDL_RenderPresent(renderer);
 			}
 			else if (usernameState == invalid)
@@ -471,6 +488,7 @@ void Game::handleRegistrationEvents()
 				SDL_RenderPresent(renderer);
 			}
 			keyPressed = false;
+
 		}
 	}
 
@@ -496,6 +514,7 @@ void Game::handleLoginEvents()
 	int passwordState = none;
 	bool keyPressed = false;
 	bool submitHover = false;
+	bool backHover = false;
 	std::string storedUsername, storedPassword;
 	SDL_StartTextInput();
 
@@ -530,7 +549,14 @@ void Game::handleLoginEvents()
 				}
 				needsRedraw = true;
 				submitHover = submit.checkHover(cursorX, cursorY);
-
+				if (loginBackButton.checkHover(cursorX, cursorY))
+				{
+					backHover = true;
+				}
+				else
+				{
+					backHover = false;
+				}
 
 			case SDL_MOUSEBUTTONDOWN:
 				if (loginEvent.button.button == SDL_BUTTON_LEFT)
@@ -577,6 +603,16 @@ void Game::handleLoginEvents()
 								passwordState = invalid;
 							}
 						}
+
+					}
+					else if (loginBackButton.checkHover(cursorX, cursorY))
+					{
+						gameState = AUTH_MENU;
+					}
+					else
+					{
+						usernameActive = false;
+						passwordActive = false;
 					}
 				}
 				break;
@@ -656,10 +692,16 @@ void Game::handleLoginEvents()
 			loginMenu.writeText(renderer, usernameInput, usernameField.x + 15, usernameField.y + 20);
 			loginMenu.writeText(renderer, std::string(passwordInput.size(), '*'), passwordField.x + 15, passwordField.y + 20);
 
+			loginBackButton.drawButton(renderer);
+
 			submit.drawButton(renderer);
 			if (submitHover)
 			{
 				submit.drawHover(renderer);
+			}
+			if (backHover)
+			{
+				loginBackButton.drawHover(renderer);
 			}
 
 			SDL_SetRenderTarget(renderer, nullptr);
@@ -674,9 +716,8 @@ void Game::handleLoginEvents()
 		{
 			if (usernameState == invalid || passwordState == invalid)
 			{
-				loginMenu.writeText(renderer, "Username or Password", 290, 600);
-				loginMenu.writeText(renderer, "is not Valid! ", 290, 625);
-				loginMenu.writeText(renderer, "Please try again", 290, 650);
+				loginMenu.writeText(renderer, "Username or Password", 290, 685);
+				loginMenu.writeText(renderer, "is not Valid! ", 290, 710);
 				SDL_RenderPresent(renderer);
 			}
 			keyPressed = false;

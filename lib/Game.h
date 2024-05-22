@@ -63,6 +63,9 @@ private:
 
 	Button button;
 	Button submit;
+	Button backButton;
+	Button loginBackButton;
+
 	Board board;
 	Fruit fruit;
 	Snake snake;

@@ -269,7 +269,7 @@ int Menu::clickButtonCheck()
     else if (currentMenu == LEADERBOARD && backButton.checkHover(cursorX, cursorY)) {
         return back;
     }
-    else if ((currentMenu == AUTH_MENU && quitButton.checkHover(cursorX, cursorY)) || qButton.checkHover(cursorX, cursorY)) {
+    else if (((currentMenu == AUTH_MENU || currentMenu == PAUSE_MENU) && quitButton.checkHover(cursorX, cursorY)) || qButton.checkHover(cursorX, cursorY)) {
         return quit;
     }
     else if (leaderboardButton.checkHover(cursorX, cursorY)) {
